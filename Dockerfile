@@ -3,11 +3,11 @@ FROM node:20-alpine AS builder
 WORKDIR /app
 
 COPY package*.json ./
-RUN npm ci
+RUN npm install
 
 COPY . .
 
-ARG VITE_API_BASE_URL=https://club.api.nikcnn.xyz
+ARG VITE_API_BASE_URL=http://2.132.157.33:8000/
 ENV VITE_API_BASE_URL=${VITE_API_BASE_URL}
 
 RUN npm run build

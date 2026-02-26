@@ -5,7 +5,7 @@ React + Vite SPA для клубного приложения.
 ## Прод-домены
 
 - Frontend: `https://club.web.nikcnn.xyz`
-- API: `https://club.api.nikcnn.xyz`
+- API: `http://2.132.157.33:8000/`
 
 ## Переменные окружения
 
@@ -107,3 +107,56 @@ docker compose down
 - раздает статику через Nginx со SPA fallback.
 
 Если хотите запускать backend и frontend в одном compose-проекте, просто добавьте сервис `club-web` из этого репо в ваш общий compose рядом с `app`.
+
+
+
+
+## Coolify: ошибка `npm ci` (lockfile не синхронизирован)
+
+Если в логах сборки:
+
+- ``npm ci can only install packages when your package.json and package-lock.json are in sync``
+- много строк `Missing: ... from lock file`
+
+значит `package-lock.json` в репозитории некорректный/пустой и не соответствует `package.json`.
+
+Что сделано в этом репо для стабильного деплоя в Coolify:
+
+- в `Dockerfile` команда установки зависимостей заменена с `npm ci` на `npm install`.
+
+Почему это помогает:
+
+- `npm install` не требует строгого совпадения lock-файла и позволяет собрать образ даже при рассинхроне lockfile.
+
+Рекомендуемое долгосрочное исправление (в отдельном коммите локально):
+
+1. `rm -f package-lock.json`
+2. `npm install`
+3. `git add package-lock.json && git commit`
+
+После этого можно вернуть `npm ci` в Dockerfile для более детерминированных сборок.
+
+## Coolify: частая ошибка деплоя (branch not found)
+
+Если в логах Coolify видно:
+
+- `Could not find remote branch main to clone`
+- `fatal: Remote branch main not found in upstream origin`
+
+это не ошибка Dockerfile или фронтенд-кода — это неверно выбранная Git-ветка в настройках ресурса Coolify.
+
+Что сделать:
+
+1. Откройте ресурс в Coolify → `Source`.
+2. В поле `Branch` укажите существующую ветку репозитория (например `master`, `work` или другую фактическую ветку).
+3. Перезапустите deploy.
+
+Рекомендуемая конфигурация ресурса frontend в Coolify:
+
+- Build Pack: `Dockerfile`
+- Dockerfile Path: `./Dockerfile`
+- Port: `80`
+- Domain: `https://club.web.nikcnn.xyz`
+- Build-time variable: `VITE_API_BASE_URL=https://club.api.nikcnn.xyz`
+
+Важно: `VITE_API_BASE_URL` должен быть задан именно для **build stage**, т.к. Vite вшивает `VITE_*` переменные на этапе `npm run build`.

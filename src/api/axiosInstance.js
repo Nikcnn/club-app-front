@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 const DEFAULT_API_BASE_URL = import.meta.env.PROD
-  ? 'https://club.api.nikcnn.xyz'
+  ? 'https://:8000'
   : 'http://localhost:8000';
 
 const API_BASE_URL = (
