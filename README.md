@@ -1,16 +1,109 @@
-# React + Vite
+# club-app-front
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+React + Vite SPA для клубного приложения.
 
-Currently, two official plugins are available:
+## Прод-домены
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+- Frontend: `https://club.web.nikcnn.xyz`
+- API: `https://club.api.nikcnn.xyz`
 
-## React Compiler
+## Переменные окружения
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+Основная переменная для API:
 
-## Expanding the ESLint configuration
+- `VITE_API_BASE_URL` — базовый домен API, который вшивается на этапе `vite build`.
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+Шаблон переменных:
+
+```bash
+cp .env.example .env
+```
+
+`.env.example` и `.env.production` уже содержат:
+
+```env
+VITE_API_BASE_URL=https://club.api.nikcnn.xyz
+```
+
+## Локальный запуск без Docker
+
+1. Установить зависимости:
+
+```bash
+npm ci
+```
+
+2. Запустить dev-сервер:
+
+```bash
+npm run dev
+```
+
+> В dev-режиме, если `VITE_API_BASE_URL` не задан, используется fallback `http://localhost:8000`.
+
+## Сборка production-бандла
+
+```bash
+npm run build
+```
+
+## Docker (production)
+
+В проекте используется multi-stage Dockerfile:
+
+- Stage 1 (`node:20-alpine`): `npm ci` + `npm run build`
+- Stage 2 (`nginx:alpine`): раздача `dist` и SPA fallback через `try_files ... /index.html`
+
+### Сборка образа
+
+```bash
+docker build \
+  --build-arg VITE_API_BASE_URL=https://club.api.nikcnn.xyz \
+  -t club-app-front:latest .
+```
+
+### Запуск контейнера
+
+```bash
+docker run --rm -p 8080:80 club-app-front:latest
+```
+
+Проверка роутинга SPA (не должно быть 404 от nginx):
+
+- `http://localhost:8080/news`
+- `http://localhost:8080/clubs/1`
+
+## Docker Compose
+
+```bash
+VITE_API_BASE_URL=https://club.api.nikcnn.xyz docker compose up --build -d
+```
+
+Остановка:
+
+```bash
+docker compose down
+```
+
+По умолчанию в `docker-compose.yml` используется:
+
+- сервис `club-web`
+- порт `8080:80`
+- build arg `VITE_API_BASE_URL` (с дефолтом `https://club.api.nikcnn.xyz`)
+
+## Важно про Vite env
+
+`VITE_*` переменные доступны только на этапе сборки. Для production-деплоя обязательно передавать корректный `VITE_API_BASE_URL` во время `docker build` / `docker compose up --build`.
+
+
+## Совместимость с backend docker-compose
+
+Файл compose из вашего примера (с `postgres`, `qdrant`, `minio`, `app`) — это **backend-стек**. Для этого репозитория (frontend SPA) он не подходит «как есть», потому что фронтенду не нужны DB/Qdrant/MinIO-сервисы.
+
+Для frontend нужен отдельный сервис (как в `docker-compose.yml` этого репо), который:
+
+- собирает Vite-приложение на этапе build;
+- принимает `VITE_API_BASE_URL` **на этапе сборки**;
+- раздает статику через Nginx со SPA fallback.
+
+Если хотите запускать backend и frontend в одном compose-проекте, просто добавьте сервис `club-web` из этого репо в ваш общий compose рядом с `app`.
