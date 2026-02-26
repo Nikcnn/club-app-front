@@ -5,7 +5,7 @@ React + Vite SPA для клубного приложения.
 ## Прод-домены
 
 - Frontend: `https://club.web.nikcnn.xyz`
-- API: `http://2.132.157.33:8000/`
+- API: `https://clubit.nikcnn.xyz`
 
 ## Переменные окружения
 
