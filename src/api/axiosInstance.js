@@ -1,9 +1,16 @@
 import axios from 'axios';
 
+const DEFAULT_API_BASE_URL = import.meta.env.PROD
+  ? 'https://club.api.nikcnn.xyz'
+  : 'http://localhost:8000';
+
+const API_BASE_URL = (
+  import.meta.env.VITE_API_BASE_URL || DEFAULT_API_BASE_URL
+).replace(/\/+$/, '');
+
 // Создаём экземпляр с базовыми настройками
 const api = axios.create({
-  // Базовый URL твоего FastAPI
-  baseURL: 'http://2.132.157.33:8000', 
+  baseURL: API_BASE_URL,
   headers: {
     'Content-Type': 'application/json',
   },
@@ -14,7 +21,7 @@ api.interceptors.request.use(
   (config) => {
     // Извлекаем токен из localStorage (куда мы его положим при логине)
     const token = localStorage.getItem('access_token');
-    
+
     if (token) {
       // Добавляем заголовок авторизации согласно документации
       config.headers.Authorization = `Bearer ${token}`;
@@ -35,13 +42,13 @@ api.interceptors.response.use(
       console.warn('Сессия истекла или токен невалиден');
       localStorage.removeItem('access_token');
       localStorage.removeItem('refresh_token');
-      
+
       // Можно сделать редирект на логин, если мы не на странице входа
       if (!window.location.pathname.includes('/login')) {
         window.location.href = '/login';
       }
     }
-    
+
     // Обработка 422 Unprocessable Entity (ошибки валидации FastAPI)
     if (error.response && error.response.status === 422) {
       console.error('Ошибка валидации данных на стороне бэкенда:', error.response.data);
@@ -53,24 +60,23 @@ api.interceptors.response.use(
 
 api.interceptors.request.use((config) => {
   const isFormData =
-    typeof FormData !== "undefined" && config.data instanceof FormData;
+    typeof FormData !== 'undefined' && config.data instanceof FormData;
 
   if (isFormData) {
     // дать браузеру самому выставить multipart/form-data + boundary
     if (config.headers) {
-      delete config.headers["Content-Type"];
-      delete config.headers["content-type"];
+      delete config.headers['Content-Type'];
+      delete config.headers['content-type'];
     }
   } else {
     // для JSON-запросов можно выставлять явно
     config.headers = config.headers || {};
-    if (!config.headers["Content-Type"] && !config.headers["content-type"]) {
-      config.headers["Content-Type"] = "application/json";
+    if (!config.headers['Content-Type'] && !config.headers['content-type']) {
+      config.headers['Content-Type'] = 'application/json';
     }
   }
 
   return config;
 });
-
 
 export default api;
