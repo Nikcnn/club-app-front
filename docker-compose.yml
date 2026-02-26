@@ -5,7 +5,7 @@ services:
       context: .
       dockerfile: Dockerfile
       args:
-        VITE_API_BASE_URL: ${VITE_API_BASE_URL:-https://clubit.nikcnn.xyz/}
+        VITE_API_BASE_URL: ${VITE_API_BASE_URL:-https://club.api.nikcnn.xyz/}
     ports:
       - "8080:80"
     restart: unless-stopped
